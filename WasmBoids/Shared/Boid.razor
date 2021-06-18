@@ -1,0 +1,62 @@
+﻿@using Blazor.Extensions
+@using Blazor.Extensions.Canvas.Canvas2D
+@using WasmBoids.Models
+@inject IJSRuntime _jsRuntime;
+
+<h3>Boids Simulation</h3>
+<button class="btn btn-primary" @onclick="IncrementCount">Add ball</button>
+<div id="canvasHolder" style="position: fixed; width: 100%; height: 100%">
+    <BECanvas Width="1280" Height="720" @ref="_canvasReference"></BECanvas>
+</div>
+
+@code {
+    private BECanvas _canvasReference;
+    private Canvas2DContext _context;
+
+    private Field _ballField = new();
+    private int _currentCount = 1;
+    private DateTime _lastRender;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _context = await _canvasReference.CreateCanvas2DAsync();
+        _ballField.Resize(_canvasReference.Width, _canvasReference.Height);
+        await _jsRuntime.InvokeVoidAsync("initRenderJS", DotNetObjectReference.Create(this));
+    }
+
+    private void IncrementCount()
+        => _currentCount++;
+
+    [JSInvokable]
+    public async ValueTask RenderInBlazor(float timestamp)
+    {
+        if (_ballField.Balls.Count < _currentCount)
+            _ballField.AddRandomBalls(_currentCount - _ballField.Balls.Count);
+        _ballField.StepForward();
+
+        double fps = 1.0 / (DateTime.Now - _lastRender).TotalSeconds;
+        _lastRender = DateTime.Now;
+
+        await _context.BeginBatchAsync();
+        await _context.ClearRectAsync(0, 0, _ballField.Width, _ballField.Height);
+        await _context.SetFillStyleAsync("#003366");
+        await _context.FillRectAsync(0, 0, _ballField.Width, _ballField.Height);
+        await _context.SetFontAsync("26px Segoe UI");
+        await _context.SetFillStyleAsync("#FFFFFF");
+        await _context.FillTextAsync("Blazor WebAssembly + HTML Canvas", 10, 30);
+        await _context.SetFontAsync("16px consolas");
+        await _context.FillTextAsync($"FPS: {fps:0.000}", 10, 50);
+        await _context.SetStrokeStyleAsync("#FFFFFF");
+        foreach (var ball in _ballField.Balls)
+        {
+            await _context.BeginPathAsync();
+            await _context.ArcAsync(ball.X, ball.Y, ball.Radius, 0, 2 * Math.PI, false);
+            await _context.SetFillStyleAsync(ball.Color);
+            await _context.FillAsync();
+            await _context.StrokeAsync();
+        }
+        await _context.EndBatchAsync();
+    }
+
+}
