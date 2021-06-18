@@ -4,7 +4,7 @@
 @inject IJSRuntime _jsRuntime;
 
 <h3>Boids Simulation</h3>
-<button class="btn btn-primary" @onclick="IncrementCount">Add ball</button>
+<button class="btn btn-primary" @onclick="IncrementCount">Add boid</button>
 <div id="canvasHolder" style="position: fixed; width: 100%; height: 100%">
     <BECanvas Width="1280" Height="720" @ref="_canvasReference"></BECanvas>
 </div>
@@ -13,7 +13,7 @@
     private BECanvas _canvasReference;
     private Canvas2DContext _context;
 
-    private Field _ballField = new();
+    private Field _boidField = new();
     private int _currentCount = 1;
     private DateTime _lastRender;
 
@@ -21,7 +21,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         _context = await _canvasReference.CreateCanvas2DAsync();
-        _ballField.Resize(_canvasReference.Width, _canvasReference.Height);
+        _boidField.Resize(_canvasReference.Width, _canvasReference.Height);
         await _jsRuntime.InvokeVoidAsync("initRenderJS", DotNetObjectReference.Create(this));
     }
 
@@ -31,30 +31,40 @@
     [JSInvokable]
     public async ValueTask RenderInBlazor(float timestamp)
     {
-        if (_ballField.Balls.Count < _currentCount)
-            _ballField.AddRandomBalls(_currentCount - _ballField.Balls.Count);
-        _ballField.StepForward();
+        if (_boidField.Boids.Count < _currentCount)
+            _boidField.AddRandomBoids(_currentCount - _boidField.Boids.Count);
+        _boidField.StepForward();
 
-        double fps = 1.0 / (DateTime.Now - _lastRender).TotalSeconds;
+        var fps = 1.0 / (DateTime.Now - _lastRender).TotalSeconds;
         _lastRender = DateTime.Now;
 
         await _context.BeginBatchAsync();
-        await _context.ClearRectAsync(0, 0, _ballField.Width, _ballField.Height);
+        await _context.ClearRectAsync(0, 0, _boidField.Width, _boidField.Height);
         await _context.SetFillStyleAsync("#003366");
-        await _context.FillRectAsync(0, 0, _ballField.Width, _ballField.Height);
+        await _context.FillRectAsync(0, 0, _boidField.Width, _boidField.Height);
         await _context.SetFontAsync("26px Segoe UI");
         await _context.SetFillStyleAsync("#FFFFFF");
-        await _context.FillTextAsync("Blazor WebAssembly + HTML Canvas", 10, 30);
+        await _context.FillTextAsync("Blazor WASM & HTML Canvas", 10, 30);
         await _context.SetFontAsync("16px consolas");
         await _context.FillTextAsync($"FPS: {fps:0.000}", 10, 50);
         await _context.SetStrokeStyleAsync("#FFFFFF");
-        foreach (var ball in _ballField.Balls)
+        foreach (var boid in _boidField.Boids)
         {
+            await _context.SaveAsync();
+            await _context.TranslateAsync(boid.Position.X, boid.Position.Y);
+            await _context.RotateAsync(-(boid.Direction + MathF.PI / 2));
+
             await _context.BeginPathAsync();
-            await _context.ArcAsync(ball.X, ball.Y, ball.Radius, 0, 2 * Math.PI, false);
-            await _context.SetFillStyleAsync(ball.Color);
+            await _context.MoveToAsync(0, 0);
+            await _context.LineToAsync(4, -2);
+            await _context.LineToAsync(0, 10);
+            await _context.LineToAsync(-4, -2);
+            await _context.LineToAsync(0, 0);
+            await _context.ClosePathAsync();
+
+            await _context.SetFillStyleAsync(boid.Color);
             await _context.FillAsync();
-            await _context.StrokeAsync();
+            await _context.RestoreAsync();
         }
         await _context.EndBatchAsync();
     }

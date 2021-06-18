@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace WasmBoids.Models
 {
     public class Field
     {
-        public readonly List<Ball> Balls = new List<Ball>();
+        public readonly List<Boid> Boids = new();
         public double Width { get; private set; }
         public double Height { get; private set; }
 
@@ -14,41 +15,34 @@ namespace WasmBoids.Models
 
         public void StepForward()
         {
-            foreach (Ball ball in Balls)
-                ball.StepForward(Width, Height);
+            foreach (var boid in Boids)
+                boid.StepForward(Width, Height);
         }
 
-        private double RandomVelocity(Random rand, double min, double max)
+        // returns random normalized vector
+        private static Vector2 RandomVector2(Random rand)
         {
-            double v = min + (max - min) * rand.NextDouble();
-            if (rand.NextDouble() > .5)
-                v *= -1;
-            return v;
+            var v = new Vector2((float) rand.NextDouble(), (float) rand.NextDouble());
+            return v / v.Length();
         }
 
 
-        private string RandomColor(Random rand) => 
-            string.Format("#{0:X6}", rand.Next(0xFFFFFF));
+        private static string RandomColor(Random rand) =>
+            $"#{rand.Next(0xFFFFFF):X6}";
 
-        public void AddRandomBalls(int count = 10)
+        public void AddRandomBoids(int count = 10)
         {
-            double minSpeed = .5;
-            double maxSpeed = 5;
-            double radius = 10;
-            Random rand = new Random();
+            var rand = new Random();
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
-                Balls.Add(
-                    new Ball(
-                        x: Width * rand.NextDouble(),
-                        y: Height * rand.NextDouble(),
-                        xVel: RandomVelocity(rand, minSpeed, maxSpeed),
-                        yVel: RandomVelocity(rand, minSpeed, maxSpeed),
-                        radius: radius,
-                        color: RandomColor(rand)
-                    )
+                var newBoid = new Boid(
+                    new Vector2((float) (rand.NextDouble() * Width),
+                        (float) (rand.NextDouble() * Height)),
+                    RandomVector2(rand),
+                    RandomColor(rand)
                 );
+                Boids.Add(newBoid);
             }
         }
     }
