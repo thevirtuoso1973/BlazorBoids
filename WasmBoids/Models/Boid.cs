@@ -47,7 +47,7 @@ namespace WasmBoids.Models
         // Align with nearby boids.
         private static Vector2 Rule1(Boid boid, IReadOnlyCollection<Boid> boids)
         {
-            const float effect = 16f;
+            const float effect = 64f;
 
             if (boids.Count <= 1) return Vector2.Zero;
             var combinedVelocity = boids.Where(currBoid =>
