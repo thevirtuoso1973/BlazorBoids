@@ -16,7 +16,7 @@ namespace WasmBoids.Models
         public Field(double width, double height, int numBoids, int numPredators)
         {
             Resize(width, height);
-            
+
             AddRandomBoids(numBoids);
             // TODO: add predators
         }
@@ -24,13 +24,13 @@ namespace WasmBoids.Models
         public void StepForward()
         {
             foreach (var boid in Boids)
-                boid.StepForward(Width, Height);
+                boid.StepForward(Width, Height, Boids);
         }
 
         // returns random normalized vector
         private static Vector2 RandomVector2(Random rand)
         {
-            var v = new Vector2((float) rand.NextDouble(), (float) rand.NextDouble());
+            var v = new Vector2((float) (rand.NextDouble() * 2) - 1, (float) (rand.NextDouble() * 2) - 1);
             return v / v.Length();
         }
 
@@ -48,7 +48,7 @@ namespace WasmBoids.Models
                     new Vector2((float) (rand.NextDouble() * Width),
                         (float) (rand.NextDouble() * Height)),
                     RandomVector2(rand),
-                    RandomColor(rand)
+                    "black"
                 );
                 Boids.Add(newBoid);
             }

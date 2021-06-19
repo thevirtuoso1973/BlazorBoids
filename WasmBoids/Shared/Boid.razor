@@ -1,6 +1,7 @@
 ﻿@using Blazor.Extensions
 @using Blazor.Extensions.Canvas.Canvas2D
 @using WasmBoids.Models
+@using System.Drawing
 @inject IJSRuntime _jsRuntime;
 
 <div>
@@ -71,6 +72,10 @@
             await _context.SaveAsync();
             await _context.TranslateAsync(boid.Position.X, boid.Position.Y);
             await _context.RotateAsync(-(boid.Direction + MathF.PI / 2));
+
+            await _context.ArcAsync(0, 0, Models.Boid.SightRadius, 0, 2*Math.PI);
+            await _context.SetFillStyleAsync("#FFFFFF0F");
+            await _context.FillAsync();
 
             await _context.BeginPathAsync();
             await _context.MoveToAsync(0, 0);
