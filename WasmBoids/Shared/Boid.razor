@@ -46,6 +46,12 @@
         => _currentCount++;
 
     [JSInvokable]
+    public void MouseMoved(double x, double y)
+    {
+        _boidField.MousePos = (x, y);
+    }
+    
+    [JSInvokable]
     public async ValueTask RenderInBlazor(long holderWidth, long holderHeight)
     {
         if (holderWidth != _canvasWidth || holderHeight != _canvasHeight)

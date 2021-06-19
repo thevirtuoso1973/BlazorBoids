@@ -9,6 +9,8 @@ namespace WasmBoids.Models
         public readonly List<Boid> Boids = new();
         public double Width { get; private set; }
         public double Height { get; private set; }
+        
+        public (double, double) MousePos { get; set; }
 
         public void Resize(double width, double height) =>
             (Width, Height) = (width, height);
@@ -24,7 +26,7 @@ namespace WasmBoids.Models
         public void StepForward()
         {
             foreach (var boid in Boids)
-                boid.StepForward(Width, Height, Boids);
+                boid.StepForward(Width, Height, Boids, MousePos);
         }
 
         // returns random normalized vector

@@ -24,12 +24,14 @@ namespace WasmBoids.Models
         }
 
         // http://www.vergenet.net/~conrad/boids/pseudocode.html
-        public void StepForward(double width, double height, IReadOnlyCollection<Boid> boids)
+        public void StepForward(double width, double height, IReadOnlyCollection<Boid> boids,
+            (double, double)? mousePos)
         {
             Velocity += Rule1(this, boids);
             Velocity += Rule2(this, boids);
             Velocity += Rule3(this, boids);
             Velocity += Rule4(this, width, height);
+            Velocity += Rule5(this, mousePos);
 
             LimitVelocity();
             Position += Velocity;
@@ -57,11 +59,11 @@ namespace WasmBoids.Models
             {
                 return Vector2.Zero;
             }
-            
+
             combinedVelocity = combinedVelocity / combinedVelocity.Length() * boid.Velocity.Length();
             var dotProd = Vector2.Dot(combinedVelocity, boid.Velocity);
-            
-            return (combinedVelocity - boid.Velocity) * MathF.Pow(1 + MathF.Exp(dotProd/effect), -1);
+
+            return (combinedVelocity - boid.Velocity) * MathF.Pow(1 + MathF.Exp(dotProd / effect), -1);
         }
 
         [Pure]
@@ -89,8 +91,8 @@ namespace WasmBoids.Models
                 !boid.Equals(currBoid) && (currBoid.Position - boid.Position).Length() < SightRadius).ToArray();
             if (nearby.Length == 0) return Vector2.Zero;
             var avgNearbyPosition = nearby.Aggregate(Vector2.Zero,
-                                            (current, currBoid) =>
-                                                current + currBoid.Position) / nearby.Length;
+                (current, currBoid) =>
+                    current + currBoid.Position) / nearby.Length;
             return (avgNearbyPosition - boid.Position) / avgNearbyPosition.Length();
         }
 
@@ -123,6 +125,18 @@ namespace WasmBoids.Models
             }
 
             return change;
+        }
+
+        [Pure]
+        // follow the mouse
+        private static Vector2 Rule5(Boid boid, (double x, double y)? mousePos)
+        {
+            const float effect = 0.1f;
+
+            return mousePos == null
+                ? Vector2.Zero
+                : Vector2.Normalize(new Vector2((float) mousePos.Value.x, (float) mousePos.Value.y) - boid.Position) *
+                  effect;
         }
 
         public bool Equals(Boid other)
