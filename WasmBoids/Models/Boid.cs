@@ -57,22 +57,22 @@ namespace WasmBoids.Models
             var change = new Vector2(0, 0);
             if (boid.Position.X - 0 < edgeTolerance)
             {
-                change.X += 1f / (boid.Position.X - 0);
+                change.X += 1f / MathF.Abs(boid.Position.X - 0);
             }
 
             if (width - boid.Position.X < edgeTolerance)
             {
-                change.X -= 1f / (float) (width - boid.Position.X);
+                change.X -= 1f / MathF.Abs((float)width - boid.Position.X);
             }
 
             if (boid.Position.Y - 0 < edgeTolerance)
             {
-                change.Y += 1f / (boid.Position.Y - 0);
+                change.Y += 1f / MathF.Abs(boid.Position.Y - 0);
             }
 
             if (height - boid.Position.Y < edgeTolerance)
             {
-                change.Y -= 1f / (float) (height - boid.Position.Y);
+                change.Y -= 1f / MathF.Abs((float)height - boid.Position.Y);
             }
 
             return change;

@@ -3,34 +3,52 @@
 @using WasmBoids.Models
 @inject IJSRuntime _jsRuntime;
 
-<h3>Boids Simulation</h3>
-<button class="btn btn-primary" @onclick="IncrementCount">Add boid</button>
-<div id="canvasHolder" style="position: fixed; width: 100%; height: 100%">
-    <BECanvas Width="1280" Height="720" @ref="_canvasReference"></BECanvas>
+<div>
+    <button id="addBoidBtn" class="btn btn-primary" @onclick="IncrementCount">Add boid</button>
+    <label for="addBoidBtn">@_currentCount boids</label>
+</div>
+<div id="boidsHolder" style="position: fixed; width: 75%; height: 75%">
+    <BECanvas Width="@_canvasWidth" Height="@_canvasHeight" @ref="_canvasReference"></BECanvas>
 </div>
 
 @code {
+    private long _canvasWidth = 1280;
+    private long _canvasHeight = 720;
     private BECanvas _canvasReference;
     private Canvas2DContext _context;
 
-    private Field _boidField = new();
+    private Field _boidField;
     private int _currentCount = 1;
     private DateTime _lastRender;
 
 
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _boidField = new Field(_canvasWidth, _canvasHeight, 1, 0);
+        await _jsRuntime.InvokeVoidAsync("initRenderJS", DotNetObjectReference.Create(this));
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // I think `CreateCanvas2DAsync` has to be here because it may not be present yet in
+        // `OnInitialized`
         _context = await _canvasReference.CreateCanvas2DAsync();
-        _boidField.Resize(_canvasReference.Width, _canvasReference.Height);
-        await _jsRuntime.InvokeVoidAsync("initRenderJS", DotNetObjectReference.Create(this));
+        _boidField.Resize(_canvasWidth, _canvasHeight);
     }
 
     private void IncrementCount()
         => _currentCount++;
 
     [JSInvokable]
-    public async ValueTask RenderInBlazor(float timestamp)
+    public async ValueTask RenderInBlazor(long holderWidth, long holderHeight)
     {
+        if (holderWidth != _canvasWidth || holderHeight != _canvasHeight)
+        {
+            _canvasWidth = holderWidth;
+            _canvasHeight = holderHeight;
+            StateHasChanged();
+        }
         if (_boidField.Boids.Count < _currentCount)
             _boidField.AddRandomBoids(_currentCount - _boidField.Boids.Count);
         _boidField.StepForward();

@@ -13,6 +13,14 @@ namespace WasmBoids.Models
         public void Resize(double width, double height) =>
             (Width, Height) = (width, height);
 
+        public Field(double width, double height, int numBoids, int numPredators)
+        {
+            Resize(width, height);
+            
+            AddRandomBoids(numBoids);
+            // TODO: add predators
+        }
+
         public void StepForward()
         {
             foreach (var boid in Boids)
