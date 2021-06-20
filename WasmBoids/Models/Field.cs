@@ -23,10 +23,10 @@ namespace WasmBoids.Models
             // TODO: add predators
         }
 
-        public void StepForward()
+        public void StepForward(Boid.Behaviours behaviours)
         {
             foreach (var boid in Boids)
-                boid.StepForward(Width, Height, Boids, MousePos);
+                boid.StepForward(Width, Height, Boids, MousePos, behaviours);
         }
 
         // returns random normalized vector

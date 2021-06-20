@@ -7,9 +7,23 @@
 <div>
     <button id="addBoidBtn" class="btn btn-primary" @onclick="IncrementCount">Add boid</button>
     <label for="addBoidBtn">@_currentCount boids</label>
-    <br>
-    <input type="checkbox" id="showSightCheckbox" checked="@_showSight" @onchange="args => _showSight = (bool)args.Value!">
+    <br><br>
+    <input type="checkbox" id="showSightCheckbox" checked="@_showSight" @onchange="args => _showSight = (bool) args.Value!">
     <label for="showSightCheckbox">Show sight range?</label>
+    <br>
+    <!-- This is a small hack, we toggle the behaviour regardless of the given value. -->
+    <input type="checkbox" id="separationRule" checked="@_behaviours.HasFlag(Models.Boid.Behaviours.Separation)"
+           @onchange="_ => _behaviours ^= Models.Boid.Behaviours.Separation">
+    <label for="separationRule">Separation rule</label>
+    <input type="checkbox" id="alignmentRule" checked="@_behaviours.HasFlag(Models.Boid.Behaviours.Alignment)"
+           @onchange="_ => _behaviours ^= Models.Boid.Behaviours.Alignment">
+    <label for="alignmentRule">Alignment rule</label>
+    <input type="checkbox" id="cohesiveRule" checked="@_behaviours.HasFlag(Models.Boid.Behaviours.Cohesive)"
+           @onchange="_ => _behaviours ^= Models.Boid.Behaviours.Cohesive">
+    <label for="cohesiveRule">Cohesive rule</label>
+    <input type="checkbox" id="followMouse" checked="@_behaviours.HasFlag(Models.Boid.Behaviours.FollowMouse)"
+           @onchange="_ => _behaviours ^= Models.Boid.Behaviours.FollowMouse">
+    <label for="followMouse">Follow mouse</label>
 </div>
 <div id="boidsHolder" style="position: fixed; width: 75%; height: 75%">
     <BECanvas Width="@_canvasWidth" Height="@_canvasHeight" @ref="_canvasReference"></BECanvas>
@@ -21,9 +35,15 @@
     private BECanvas _canvasReference;
     private Canvas2DContext _context;
 
-    private Field _boidField;
     private int _currentCount = 1;
     private bool _showSight = true;
+
+    private Models.Boid.Behaviours _behaviours = Models.Boid.Behaviours.Separation
+                                                 | Models.Boid.Behaviours.Alignment
+                                                 | Models.Boid.Behaviours.Cohesive
+                                                 | Models.Boid.Behaviours.FollowMouse;
+
+    private Field _boidField;
     private DateTime _lastRender;
 
 
@@ -50,7 +70,7 @@
     {
         _boidField.MousePos = (x, y);
     }
-    
+
     [JSInvokable]
     public async ValueTask RenderInBlazor(long holderWidth, long holderHeight)
     {
@@ -62,7 +82,7 @@
         }
         if (_boidField.Boids.Count < _currentCount)
             _boidField.AddRandomBoids(_currentCount - _boidField.Boids.Count);
-        _boidField.StepForward();
+        _boidField.StepForward(_behaviours);
 
         var fps = 1.0 / (DateTime.Now - _lastRender).TotalSeconds;
         _lastRender = DateTime.Now;

@@ -10,6 +10,15 @@ namespace WasmBoids.Models
     {
         public const float SightRadius = 100;
 
+        [Flags]
+        public enum Behaviours
+        {
+            Separation = 1,
+            Alignment = 2,
+            Cohesive = 4,
+            FollowMouse = 8
+        }
+
         public Vector2 Position { get; private set; }
 
         // angle from x axis (in radians), taking into account that higher Y values are down in canvas space
@@ -25,13 +34,19 @@ namespace WasmBoids.Models
 
         // http://www.vergenet.net/~conrad/boids/pseudocode.html
         public void StepForward(double width, double height, IReadOnlyCollection<Boid> boids,
-            (double, double)? mousePos)
+            (double, double)? mousePos, Behaviours behaviours)
         {
-            Velocity += Rule1(this, boids);
-            Velocity += Rule2(this, boids);
-            Velocity += Rule3(this, boids);
+            if (behaviours.HasFlag(Behaviours.Alignment))
+                Velocity += Rule1(this, boids);
+            if (behaviours.HasFlag(Behaviours.Separation))
+                Velocity += Rule2(this, boids);
+            if (behaviours.HasFlag(Behaviours.Cohesive))
+                Velocity += Rule3(this, boids);
+
             Velocity += Rule4(this, width, height);
-            Velocity += Rule5(this, mousePos);
+
+            if (behaviours.HasFlag(Behaviours.FollowMouse))
+                Velocity += Rule5(this, mousePos);
 
             LimitVelocity();
             Position += Velocity;
@@ -41,7 +56,7 @@ namespace WasmBoids.Models
         {
             if (Velocity.Length() > 10)
             {
-                Velocity = Velocity / Velocity.Length() * 10;
+                Velocity = Velocity / Velocity.Length() * 10; // normalize then change length to maximum 10
             }
         }
 
@@ -144,18 +159,6 @@ namespace WasmBoids.Models
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
             return Position.Equals(other.Position) && Velocity.Equals(other.Velocity) && Color == other.Color;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((Boid) obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Position, Velocity, Color);
         }
     }
 }
