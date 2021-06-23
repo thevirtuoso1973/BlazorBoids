@@ -4,6 +4,10 @@
 @using System.Drawing
 @inject IJSRuntime _jsRuntime;
 
+<p>
+    Currently rendering through @(_renderInJs ? "JavaScript" : "Blazor's Canvas API"). Switch to the other to see
+    the performance difference. (It's very noticeable above 30 boids.)
+</p>
 <div>
     <button id="addBoidBtn" class="btn btn-primary" @onclick="IncrementCount">Add boid</button>
     <label for="addBoidBtn">@_currentCount boids</label>
@@ -24,18 +28,32 @@
     <input type="checkbox" id="followMouse" checked="@_behaviours.HasFlag(Models.Boid.Behaviours.FollowMouse)"
            @onchange="_ => _behaviours ^= Models.Boid.Behaviours.FollowMouse">
     <label for="followMouse">Follow mouse</label>
+    <br>
+    <input type="checkbox" id="renderCheck" checked="@_renderInJs"
+           @onchange="args => _renderInJs = (bool)args.Value!">
+    <label for="renderCheck">Render in native JS?</label>
 </div>
 <div id="boidsHolder" style="position: fixed; width: 75%; height: 75%">
-    <BECanvas Width="@_canvasWidth" Height="@_canvasHeight" @ref="_canvasReference"></BECanvas>
+    @if (_renderInJs)
+    {
+        <canvas id="boidsCanvas"></canvas>
+    }
+    else
+    {
+        <BECanvas Width="@_canvasWidth" Height="@_canvasHeight" @ref="_canvasReference"></BECanvas>
+    }
 </div>
 
 @code {
+
+    private bool _renderInJs = false;
+
     private long _canvasWidth = 1280;
     private long _canvasHeight = 720;
     private BECanvas _canvasReference;
     private Canvas2DContext _context;
 
-    private int _currentCount = 1;
+    private int _currentCount = 10;
     private bool _showSight = true;
 
     private Models.Boid.Behaviours _behaviours = Models.Boid.Behaviours.Separation
@@ -50,7 +68,7 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        _boidField = new Field(_canvasWidth, _canvasHeight, 1, 0);
+        _boidField = new Field(_canvasWidth, _canvasHeight, _currentCount, 0);
         await _jsRuntime.InvokeVoidAsync("initRenderJS", DotNetObjectReference.Create(this));
     }
 
@@ -58,12 +76,16 @@
     {
     // I think `CreateCanvas2DAsync` has to be here because it may not be present yet in
     // `OnInitialized`
-        _context = await _canvasReference.CreateCanvas2DAsync();
+        if (!_renderInJs)
+            _context = await _canvasReference.CreateCanvas2DAsync();
         _boidField.Resize(_canvasWidth, _canvasHeight);
     }
 
     private void IncrementCount()
-        => _currentCount++;
+    {
+        _boidField.AddRandomBoids(1);
+        _currentCount++;
+    }
 
     [JSInvokable]
     public void MouseMoved(double x, double y)
@@ -80,13 +102,18 @@
             _canvasHeight = holderHeight;
             StateHasChanged();
         }
-        if (_boidField.Boids.Count < _currentCount)
-            _boidField.AddRandomBoids(_currentCount - _boidField.Boids.Count);
         _boidField.StepForward(_behaviours);
 
         var fps = 1.0 / (DateTime.Now - _lastRender).TotalSeconds;
         _lastRender = DateTime.Now;
 
+        if (_renderInJs)
+        {
+            var boidList = _boidField.Boids.Select(boid => new[] {boid.Position.X, boid.Position.Y, boid.Direction}).ToList();
+            await _jsRuntime.InvokeVoidAsync("renderInJS", boidList, fps, _canvasWidth, _canvasHeight, _showSight, Models.Boid.SightRadius);
+            return;
+        }
+        
         await _context.BeginBatchAsync();
         await _context.ClearRectAsync(0, 0, _boidField.Width, _boidField.Height);
         await _context.SetFillStyleAsync("#000FFF");
@@ -95,7 +122,7 @@
         await _context.SetFillStyleAsync("#FFFFFF");
         await _context.FillTextAsync("Blazor WASM & HTML Canvas", 10, 30);
         await _context.SetFontAsync("16px consolas");
-        await _context.FillTextAsync($"FPS: {fps:0.000}", 10, 50);
+        await _context.FillTextAsync($"FPS: {fps:0.0}", 10, 50);
         await _context.SetStrokeStyleAsync("#FFFFFF");
         foreach (var boid in _boidField.Boids)
         {

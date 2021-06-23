@@ -37,9 +37,6 @@ namespace WasmBoids.Models
         }
 
 
-        private static string RandomColor(Random rand) =>
-            $"#{rand.Next(0xFFFFFF):X6}";
-
         public void AddRandomBoids(int count = 10)
         {
             var rand = new Random();
@@ -50,7 +47,7 @@ namespace WasmBoids.Models
                     new Vector2((float) (rand.NextDouble() * Width),
                         (float) (rand.NextDouble() * Height)),
                     RandomVector2(rand),
-                    "black"
+                    "white"
                 );
                 Boids.Add(newBoid);
             }

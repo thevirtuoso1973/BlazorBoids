@@ -48,6 +48,48 @@
             // we pass the co-ordinates converted to canvas space
             theInstance.invokeMethodAsync("MouseMoved", x - rect.x, y - rect.y);
         }
+        
+        window.renderInJS = (boids, fps, width, height, showSight, sightRadius) => {
+            const canvas = document.getElementById('boidsCanvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = "#000FFF";
+            ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText("FPS: " + Math.round(fps), 10, 10);
+            
+            for (const boid of boids) {
+                const x = boid[0];
+                const y = boid[1];
+                const direction = boid[2];
+                
+                
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(-(direction + Math.PI/2))
+                
+                if (showSight) {
+                    ctx.arc(0, 0, sightRadius, 0, 2*Math.PI);
+                    ctx.fillStyle = "#FFFFFF0F";
+                    ctx.fill();
+                }
+            
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(4, -2);
+                ctx.lineTo(0, 10);
+                ctx.lineTo(-4, -2);
+                ctx.lineTo(0, 0);
+                ctx.closePath();
+
+                ctx.fillStyle = "white";
+                ctx.fill();
+                ctx.restore();
+            }
+        }
     </script>
 </body>
 
