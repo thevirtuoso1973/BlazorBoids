@@ -33,7 +33,7 @@
            @onchange="args => _renderInJs = (bool)args.Value!">
     <label for="renderCheck">Render in native JS?</label>
 </div>
-<div id="boidsHolder" style="position: fixed; width: 75%; height: 75%">
+<div id="boidsHolder" style="position: fixed; width: 75%; height: 70%">
     @if (_renderInJs)
     {
         <canvas id="boidsCanvas"></canvas>
